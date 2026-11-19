@@ -190,11 +190,108 @@ jobs:
           retention-days: 1
           compression-level: 1
 
+  build-mac:
+    name: Build macOS universal redist
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          brew install autoconf automake libtool cmake pkg-config gnu-sed qt@5
+
+          # Match the Qt 5 build tools used by the Linux jobs.
+          echo "$(brew --prefix qt@5)/bin" >> "$GITHUB_PATH"
+
+      - name: Determine cache platform
+        id: platform
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "id=macos-$(sw_vers -productVersion)" >> "$GITHUB_OUTPUT"
+
+          sw_vers
+          xcodebuild -version
+          clang --version
+          cmake --version
+          qmake -v
+
+      - name: Restore dependency cache
+        id: deps-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            **/*-mac-64
+            **/*-mac-arm
+            **/mac-64
+
+          key: >-
+            libacfutils-deps-${{ env.DEPS_CACHE_VERSION }}-${{
+            steps.platform.outputs.id }}-${{ runner.arch }}-universal-${{
+            hashFiles(
+              'build_deps',
+              'build_dep.common',
+              '.gitmodules',
+              '**/build_*',
+              '**/build-mac',
+              '**/qmake.pro',
+              '**/*.patch'
+            ) }}
+
+      - name: Build dependencies
+        shell: bash
+        run: ./build_deps
+
+      - name: Save dependency cache
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            **/*-mac-64
+            **/*-mac-arm
+            **/mac-64
+
+          key: ${{ steps.deps-cache.outputs.cache-primary-key }}
+
+      - name: Build and verify macOS redist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ./build_redist
+
+          test -d libacfutils-redist/include
+          test -d libacfutils-redist/mac64/include
+          test -f libacfutils-redist/mac64/lib/libacfutils.a
+
+          for library in libacfutils-redist/mac64/lib/*.a; do
+              lipo -verify_arch x86_64 arm64 "$library"
+          done
+
+      - name: Upload macOS redist
+        uses: actions/upload-artifact@v7
+        with:
+          name: libacfutils-redist-mac64
+          path: libacfutils-redist/mac64/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 1
+
   publish:
     name: Publish detached redist commit
 
     needs:
       - build
+      - build-mac
 
     runs-on: ubuntu-latest
 
@@ -242,6 +339,12 @@ jobs:
           name: libacfutils-redist-win64
           path: libacfutils-redist/win64
 
+      - name: Download macOS redist
+        uses: actions/download-artifact@v8
+        with:
+          name: libacfutils-redist-mac64
+          path: libacfutils-redist/mac64
+
       - name: Verify combined redist
         shell: bash
         run: |
@@ -251,12 +354,16 @@ jobs:
           test -d libacfutils-redist/lin64
           test -d libacfutils-redist/mingw64
           test -d libacfutils-redist/win64
+          test -d libacfutils-redist/mac64
 
           test -f \
               libacfutils-redist/lin64/lib/libacfutils.a
 
           test -f \
               libacfutils-redist/mingw64/lib/libacfutils.a
+
+          test -f \
+              libacfutils-redist/mac64/lib/libacfutils.a
 
           test -n "$(
               find libacfutils-redist/win64 \
@@ -328,4 +435,5 @@ jobs:
               echo "- \`lin64\`"
               echo "- \`mingw64\`"
               echo "- \`win64\`"
+              echo "- \`mac64\` (Intel and Apple Silicon)"
           } >> "$GITHUB_STEP_SUMMARY"
