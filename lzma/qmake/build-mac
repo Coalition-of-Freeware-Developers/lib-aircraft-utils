@@ -15,6 +15,8 @@
 
 # Copyright 2017 Saso Kiselkov. All rights reserved.
 
+set -e
+
 # We'll try to build on N+1 CPUs we have available. The extra +1 is to allow
 # for one make instance to be blocking on disk.
 NCPUS=$(( $(sysctl -n hw.ncpu) + 1 ))
@@ -31,5 +33,5 @@ fi
 
 qmake -spec macx-clang && make -j $NCPUS && mv "$LIB" mac-64
 if [ $? != 0 ] ; then
-  exit
+  exit 1
 fi

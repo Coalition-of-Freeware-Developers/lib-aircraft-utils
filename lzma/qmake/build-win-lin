@@ -15,6 +15,8 @@
 
 # Copyright 2017 Saso Kiselkov. All rights reserved.
 
+set -e
+
 # Invoke this script to build libacfutils for both Windows and Linux,
 # 32- & 64-bit flavors. Install the necessary mingw cross-compile utilities
 # first.
@@ -39,14 +41,14 @@ if [ "$minimal" -ne 1 ]; then
 	qmake -set CROSS_COMPILE x86_64-w64-mingw32- && qmake -spec \
 	    win32-g++ && make -j $NCPUS && mv "$RELEASE/$LIB" win-64
 	if [ $? != 0 ] ; then
-	  exit
+	  exit 1
 	fi
 fi
 
 make distclean > /dev/null
 qmake -spec linux-g++-64 && make -j $NCPUS && mv "$LIB" linux-64
 if [ $? != 0 ] ; then
-  exit
+  exit 1
 fi
 
 make distclean > /dev/null

@@ -14,7 +14,7 @@ env:
   # Required for old bundled CMake projects with modern CMake 4.x.
   CMAKE_POLICY_VERSION_MINIMUM: '3.5'
 
-  DEPS_CACHE_VERSION: '1'
+  DEPS_CACHE_VERSION: '2'
 
 jobs:
   build:
@@ -107,7 +107,10 @@ jobs:
               'build_dep.common',
               'XCompile.cmake',
               '.gitmodules',
-              '**/build_*'
+              '**/build_*',
+              '**/build-win-lin',
+              '**/qmake.pro',
+              '**/*.patch'
             ) }}
 
       - name: Build dependencies
@@ -123,6 +126,21 @@ jobs:
               ./build_deps
           fi
 
+      - name: Build redist
+        shell: bash
+        env:
+          BUILD_MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BUILD_MODE" == "dll" ]]; then
+              ./build_redist -d
+              bash .github/scripts/verify-redist.sh libacfutils-redist lin64 win64
+          else
+              ./build_redist
+              bash .github/scripts/verify-redist.sh libacfutils-redist lin64 mingw64
+          fi
+
       - name: Save dependency cache
         if: steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
@@ -134,41 +152,6 @@ jobs:
             **/win-64
 
           key: ${{ steps.deps-cache.outputs.cache-primary-key }}
-
-      - name: Build redist
-        shell: bash
-        env:
-          BUILD_MODE: ${{ matrix.mode }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$BUILD_MODE" == "dll" ]]; then
-              ./build_redist -d
-
-              test -d libacfutils-redist/include
-              test -d libacfutils-redist/lin64
-              test -d libacfutils-redist/win64
-
-              test -n "$(
-                  find libacfutils-redist/win64 \
-                      -type f \
-                      -name '*.dll' \
-                      -print \
-                      -quit
-              )"
-          else
-              ./build_redist
-
-              test -d libacfutils-redist/include
-              test -d libacfutils-redist/lin64
-              test -d libacfutils-redist/mingw64
-
-              test -f \
-                  libacfutils-redist/lin64/lib/libacfutils.a
-
-              test -f \
-                  libacfutils-redist/mingw64/lib/libacfutils.a
-          fi
 
       - name: Upload static redist
         if: matrix.mode == 'static'
@@ -220,10 +203,19 @@ jobs:
           echo "id=macos-$(sw_vers -productVersion)" >> "$GITHUB_OUTPUT"
 
           sw_vers
-          xcodebuild -version
-          clang --version
-          cmake --version
-          qmake -v
+          {
+              xcodebuild -version
+              xcrun --sdk macosx --show-sdk-version
+              xcrun --sdk macosx --show-sdk-build-version
+              xcrun --sdk macosx --show-sdk-path
+              xcrun clang --version
+              cmake --version
+              qmake -v
+              pkg-config --version
+          } | tee "$RUNNER_TEMP/libacfutils-toolchain.txt"
+
+          toolchain_id="$(shasum -a 256 "$RUNNER_TEMP/libacfutils-toolchain.txt" | awk '{print $1}')"
+          echo "toolchain=${toolchain_id}" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependency cache
         id: deps-cache
@@ -236,7 +228,8 @@ jobs:
 
           key: >-
             libacfutils-deps-${{ env.DEPS_CACHE_VERSION }}-${{
-            steps.platform.outputs.id }}-${{ runner.arch }}-universal-${{
+            steps.platform.outputs.id }}-${{ runner.arch }}-${{
+            steps.platform.outputs.toolchain }}-universal-${{
             hashFiles(
               'build_deps',
               'build_dep.common',
@@ -251,6 +244,14 @@ jobs:
         shell: bash
         run: ./build_deps
 
+      - name: Build and verify macOS redist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ./build_redist
+          bash .github/scripts/verify-redist.sh libacfutils-redist mac64
+
       - name: Save dependency cache
         if: steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
@@ -261,21 +262,6 @@ jobs:
             **/mac-64
 
           key: ${{ steps.deps-cache.outputs.cache-primary-key }}
-
-      - name: Build and verify macOS redist
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          ./build_redist
-
-          test -d libacfutils-redist/include
-          test -d libacfutils-redist/mac64/include
-          test -f libacfutils-redist/mac64/lib/libacfutils.a
-
-          for library in libacfutils-redist/mac64/lib/*.a; do
-              lipo -verify_arch x86_64 arm64 "$library"
-          done
 
       - name: Upload macOS redist
         uses: actions/upload-artifact@v7
@@ -350,28 +336,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          test -d libacfutils-redist/include
-          test -d libacfutils-redist/lin64
-          test -d libacfutils-redist/mingw64
-          test -d libacfutils-redist/win64
-          test -d libacfutils-redist/mac64
-
-          test -f \
-              libacfutils-redist/lin64/lib/libacfutils.a
-
-          test -f \
-              libacfutils-redist/mingw64/lib/libacfutils.a
-
-          test -f \
-              libacfutils-redist/mac64/lib/libacfutils.a
-
-          test -n "$(
-              find libacfutils-redist/win64 \
-                  -type f \
-                  -name '*.dll' \
-                  -print \
-                  -quit
-          )"
+          bash .github/scripts/verify-redist.sh \
+              libacfutils-redist lin64 mingw64 win64 mac64
 
           echo
           echo "Combined redistribution:"

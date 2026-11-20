@@ -72,10 +72,10 @@ case `uname` in
 		# We must disable built-in support for thread-local-storage,
 		# because it messes with VMProtect packed files on OSX.
 		CUSTPREMAKECMD="gsed -i '/^#define TLS/d;' config.h" \
-		CFLAGS="-m64" LDFLAGS="-m64" BUILD_SINGLE_THREADED=1 \
+		BUILD_SINGLE_THREADED=1 \
 		    build_dep "mac-64" "$PIXMAN_CONFOPTS_COMMON" "$PIXMAN" \
 		    "pixman" "$PIXMAN_PRODUCT" "$PIXMAN_PATCHES" && \
-		CFLAGS="$CAIRO_CFLAGS_COMMON\\ -m64" LDFLAGS="-m64" \
+		CFLAGS="$CAIRO_CFLAGS_COMMON" \
 		    build_dep "mac-64" "$CAIRO_CONFOPTS_COMMON" "$CAIRO" \
 		    "cairo" "$CAIRO_PRODUCT" "$CAIRO_PATCHES"
 		;;

@@ -94,13 +94,13 @@ function make_macOS_fat() {
 	PLATFORM_ARM="$2"
 	OUTDIR_ARM="$(pwd)/$GLEW-$PLATFORM_ARM"
 	OUTDIR="$(pwd)/$GLEW-$PLATFORM"
-	ARCHS=$(lipo -archs $OUTDIR/install/lib/libGLEWmx.a)
+	ARCHS=$(lipo -archs "$OUTDIR/install/lib/libGLEWmx.a") || return 1
 
 	# We need to do that in order to replace the arm64 slice if it
 	# already exists.
 	if [[ "$ARCHS" =~ "arm64" ]]; then
 		lipo -remove arm64 "$OUTDIR/install/lib/libGLEWmx.a" \
-		    -output "$OUTDIR/install/lib/libGLEWmx.a"
+		    -output "$OUTDIR/install/lib/libGLEWmx.a" || return 1
 	fi
 	lipo -create "$OUTDIR_ARM/install/lib/libGLEWmx.a" \
 	    "$OUTDIR/install/lib/libGLEWmx.a" \

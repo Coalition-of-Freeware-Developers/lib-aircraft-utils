@@ -15,6 +15,8 @@
 
 # Copyright 2025 Saso Kiselkov. All rights reserved.
 
+set -e
+
 # OpenSSL uses a fairly custom build infrastructure, so we can't
 # use build_dep
 
@@ -65,26 +67,26 @@ function build_ssl() {
 
 	(
 		if [[ "$do_clean" = 1 ]]; then
-			rm -rf "$OUTDIR" "$OPENSSL"
+			rm -rf "$OUTDIR" "$OPENSSL" || exit 1
 			return
 		fi
 		if [[ $(uname) = "Darwin" ]]; then
 			CONFOPTS="$CONFOPTS -mmacosx-version-min=11.0"
 		fi
 		if ! [ -f "$OUTDIR/lib/libssl.a" ]; then
-			rm -rf "$OUTDIR" "$OPENSSL"
+			rm -rf "$OUTDIR" "$OPENSSL" || exit 1
 			tar xjf "${OPENSSL}.tar.bz2" || exit 1
-			( cd "$OPENSSL" ;
+			( cd "$OPENSSL" &&
 				patch -p1 < ../atexit.patch ) || exit 1
-			mkdir -p "$OUTDIR"
-			cd "$OPENSSL"
+			mkdir -p "$OUTDIR" || exit 1
+			cd "$OPENSSL" || exit 1
 			./Configure no-shared no-dso no-tests \
 			    --prefix="$OUTDIR" $CONFOPTS && \
 			    make clean && \
 			    make -j "$NCPUS" && \
-			    make -j "$NCPUS" install_sw install_ssldirs
-			if ! [ -d "OUTDIR/lib64" ]; then
-				( cd "$OUTDIR" ; ln -s lib64 lib )
+			    make -j "$NCPUS" install_sw install_ssldirs || exit 1
+			if [ -d "$OUTDIR/lib64" ] && [ ! -e "$OUTDIR/lib" ]; then
+				( cd "$OUTDIR" && ln -s lib64 lib ) || exit 1
 			fi
 		fi
 	)

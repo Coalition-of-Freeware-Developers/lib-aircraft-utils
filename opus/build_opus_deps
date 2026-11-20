@@ -129,7 +129,7 @@ case `uname` in
 		;;
 	Darwin)
 		NCPUS=$(( $(sysctl -n hw.ncpu) + 1 ))
-		CFLAGS="-m64" LDFLAGS="-m64" build_opusfile "mac-64"
+		build_opusfile "mac-64"
 		;;
 	*)
 		echo "Unsupported build platform" >&2

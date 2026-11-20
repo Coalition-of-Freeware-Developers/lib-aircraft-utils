@@ -15,6 +15,11 @@
 
 # Copyright 2017 Saso Kiselkov. All rights reserved.
 
+if [[ "$(uname)" == Darwin ]]; then
+	# PKG_CONFIG_PATH selects bundled dependencies; disable Homebrew fallback.
+	export PKG_CONFIG_LIBDIR=
+fi
+
 function build_dep() {
 	PLATFORM="$1"
 	CONFOPTS="$2"
@@ -41,7 +46,7 @@ function build_dep() {
 
 	if [ -n "$do_clean" ]; then
 		echo rm -rf "$BUILDDIR" "$SRCDIR"
-		rm -rf "$BUILDDIR" "$SRCDIR"
+		rm -rf "$BUILDDIR" "$SRCDIR" || exit 1
 		SRCDIR=""
 		BUILDDIR=""
 		return
@@ -79,7 +84,7 @@ function build_dep() {
 
 		if [ -n "$PATCHFILES" ]; then
 			for PATCHFILE in $PATCHFILES; do
-				( cd "$SRCDIR" && patch -p1 < "../$PATCHFILE" )
+				( cd "$SRCDIR" && patch -p1 < "../$PATCHFILE" ) || exit 1
 			done
 		fi
 	fi
@@ -91,10 +96,10 @@ function build_dep() {
 	fi
 	(
 		if [[ "$BUILDDIR" != "$SRCDIR" ]]; then
-			rm -rf "$BUILDDIR"
-			mkdir "$BUILDDIR"
+			rm -rf "$BUILDDIR" || exit 1
+			mkdir "$BUILDDIR" || exit 1
 		fi
-		cd "$BUILDDIR"
+		cd "$BUILDDIR" || exit 1
 
 		if [ -n "$CUSTPREPCMD" ]; then
 			eval "$CUSTPREPCMD" || exit 1
@@ -107,16 +112,26 @@ function build_dep() {
 		# Linux: for some reason, we need to specify an optimization
 		# level or we won't get lstat/fstat correctly defined. WTF...
 		if [ -n "$CONFIG_CMAKE" ]; then
+			cmake_search_options=()
 			if [[ $(uname) = "Linux" ]] &&
 			    [[ "$PLATFORM" = "win-64" ]]; then
 				XCOMPILE_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=../../XCompile.cmake -DHOST=x86_64-w64-mingw32"
 			elif [[ "$PLATFORM" = "mac-64" ]]; then
 				XCOMPILE_OPTIONS="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
+				# Ignore host libraries while retaining the Homebrew build tool.
+				cmake_search_options=(
+				    "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
+				    "-DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew;/usr/local"
+				    -DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=OFF
+				    -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=FALSE
+				    "-DPKG_CONFIG_EXECUTABLE=$(command -v pkg-config)"
+				)
 			else
 				XCOMPILE_OPTIONS=""
 			fi
 			cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/$INSTALL_DIR" \
 			    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+			    "${cmake_search_options[@]}" \
 			    ${XCOMPILE_OPTIONS} \
 			    ${CONFOPTS} "../$SRCDIR" || exit 1
 		else
@@ -138,7 +153,7 @@ $LDFLAGS_ADDTL" \
 		if [ -z "$NOINSTALL" ]; then
 			make install || exit 1
 		fi
-	)
+	) || exit $?
 	SRCDIR=""
 	BUILDDIR=""
 }

@@ -15,6 +15,8 @@
 
 # Copyright 2019 Saso Kiselkov. All rights reserved.
 
+set -e
+
 OUTPUT=libacfutils-redist
 MINGWROOT="/usr/x86_64-w64-mingw32"
 
@@ -79,20 +81,20 @@ function install_platform() {
 		;;
 	esac
 
-	mkdir -p "$OUTPUT/$PLATFORM/include" "$OUTPUT/$PLATFORM/lib"
+	mkdir -p "$OUTPUT/$PLATFORM/include" "$OUTPUT/$PLATFORM/lib" || return 1
 
-	cp -r ${HDRS} "$OUTPUT/$PLATFORM/include"
-	cp -r ${LIBS} "$OUTPUT/$PLATFORM/lib"
+	cp -r ${HDRS} "$OUTPUT/$PLATFORM/include" || return 1
+	cp -r ${LIBS} "$OUTPUT/$PLATFORM/lib" || return 1
 	if [ -z "$INSTALL_SHARED" ]; then
 		for FILE in ${STATIC_LIBS[*]}; do
 			PLATFORM_FILE="$(echo "$FILE" | \
 			    sed "s/%PLATFORM%/$LONG_PLATFORM/g")"
-			cp "$PLATFORM_FILE" "$OUTPUT/$PLATFORM/lib"
+			cp "$PLATFORM_FILE" "$OUTPUT/$PLATFORM/lib" || return 1
 		done
 	fi
 	if [ -n "$SRCS" ]; then
-		mkdir -p "$OUTPUT/$PLATFORM/src"
-		cp -r ${SRCS} "$OUTPUT/$PLATFORM/src"
+		mkdir -p "$OUTPUT/$PLATFORM/src" || return 1
+		cp -r ${SRCS} "$OUTPUT/$PLATFORM/src" || return 1
 	fi
 }
 

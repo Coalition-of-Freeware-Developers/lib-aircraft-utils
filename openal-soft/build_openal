@@ -33,6 +33,7 @@ CONFOPTS_COMMON="-DALSOFT_EMBED_HRTF_DATA=ON -DLIBTYPE=STATIC \
 function do_build() {
 	ARCH="$1"
 	EXTRA_FLAGS="$2"
+	cmake_search_options=()
 	case $(uname) in
 	Linux)
 		NCPUS=$(( $(grep 'processor[[:space:]]\+:' /proc/cpuinfo \
@@ -40,12 +41,22 @@ function do_build() {
 		;;
 	Darwin)
 		NCPUS=$(( $(sysctl -n hw.ncpu) + 1 ))
+		export PKG_CONFIG_PATH=
+		export PKG_CONFIG_LIBDIR=
+		cmake_search_options=(
+		    "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
+		    "-DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew;/usr/local"
+		    -DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=OFF
+		    -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=FALSE
+		    "-DPKG_CONFIG_EXECUTABLE=$(command -v pkg-config)"
+		)
 	esac
 
 	(
 		cd "$DIR-$ARCH"
 		cd "build"
 		cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" \
+		    "${cmake_search_options[@]}" \
 		    $EXTRA_FLAGS ..
 		make -j "$NCPUS" && make install
 	)
@@ -118,7 +129,6 @@ case $(uname) in
 			#    patch -p1 < ../visibility.patch )
 			do_build "mac-64" \
 				"-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 \
-				-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 \
 				$CONFOPTS_COMMON"
 		fi
 		;;

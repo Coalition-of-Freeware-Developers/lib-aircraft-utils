@@ -196,6 +196,11 @@ fi
 
 export PKG_CONFIG_PATH
 
+if [[ "$ARCH" == mac-* ]]; then
+	# Missing bundled packages must not resolve to host-only Homebrew builds.
+	export PKG_CONFIG_LIBDIR=
+fi
+
 if [[ "$1" = "--cflags" ]]; then
 	CGLM_EXTRA="-I$(pwd)/cglm/cglm-0.7.9/include"
 	PCRE2_EXTRA="-DPCRE2_CODE_UNIT_WIDTH=8"
@@ -244,8 +249,10 @@ elif [[ "$1" = "--libs" ]]; then
 	fi
 fi
 
+PKG_CONFIG_FLAGS="$(pkg-config "$@" $PACKAGES)" || exit $?
+
 echo $WHOLE_ARCH_ON ${ACFUTILS_EXTRA} ${LZMA} ${LIBICONV} \
-    $(pkg-config $@ $PACKAGES) \
+    ${PKG_CONFIG_FLAGS} \
     $EXTRA $WHOLE_ARCH_OFF \
     $OPENSSL_EXTRA $DBGEXTRA ${CGLM_EXTRA} ${PCRE2_EXTRA} ${OPENAL_EXTRA} \
     ${GLEW_EXTRA} ${STACKPROT_EXTRA} ${WINBCRYPT_EXTRA} ${WINMM_EXTRA}

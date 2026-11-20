@@ -15,6 +15,8 @@
 
 # Copyright 2023 Saso Kiselkov. All rights reserved.
 
+set -e
+
 # Prior to building the included dependencies, make sure the following
 # packages are installed (tested on Ubuntu 18.04):
 #	autoconf automake build-essential cmake gcc-multilib g++-multilib
@@ -133,7 +135,7 @@ fi
 if [[ "$do_clean" != 1 ]]; then
 	git submodule init mingw-std-threads && \
 	git submodule update --merge --recursive && \
-	( cd mingw-std-threads && git checkout 6c2061b7da41d6aa1b2162ff4383ec3ece864bc6 )
+	( cd mingw-std-threads && git checkout 6c2061b7da41d6aa1b2162ff4383ec3ece864bc6 ) || exit 1
 fi
 
 function check_brew_install() {
@@ -148,7 +150,7 @@ function check_brew_install() {
 }
 
 function build_lzma() {
-	cd lzma/qmake
+	cd lzma/qmake || return 1
 	if [ $(uname) = Darwin ]; then
 		if [[ "$do_clean" == 1 ]]; then
 			rm -f mac-64/liblzma.a

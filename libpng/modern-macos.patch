@@ -1,0 +1,11 @@
+--- a/pngpriv.h
++++ b/pngpriv.h
+@@ -517,4 +517,6 @@
+-#  if (defined(__MWERKS__) && defined(macintosh)) || defined(applec) || \
+-    defined(THINK_C) || defined(__SC__) || defined(TARGET_OS_MAC)
++   /* Modern macOS uses math.h, even when TARGET_OS_MAC is defined. */
++#  if ((defined(__MWERKS__) && defined(macintosh)) || defined(applec) || \
++    defined(THINK_C) || defined(__SC__) || defined(TARGET_OS_MAC)) && \
++    !(defined(__APPLE__) && defined(__MACH__))
+    /* We need to check that <math.h> hasn't already been included earlier
+     * as it seems it doesn't agree with <fp.h>, yet we should really use
