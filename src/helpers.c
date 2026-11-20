@@ -962,16 +962,16 @@ path_last_comp_subst(const char *path, const char *replace)
 char *
 path_last_comp(const char *path)
 {
-	char *last;
+	const char *last;
 
 	ASSERT(path != NULL);
 	last = MAX(strrchr(path, '/'), strrchr(path, '\\'));
 	if (last != NULL)
 		last++;
 	else
-		last = (char *)path;
+		last = path;
 
-	return (last);
+	return ((char *)last);
 }
 
 /**
@@ -1500,7 +1500,7 @@ API_EXPORT char *
 lacf_dirname(const char *filename)
 {
 	int l = strlen(filename);
-	char *p1, *p2;
+	const char *p1, *p2;
 	char *str;
 
 	if (l == 0)

@@ -19,19 +19,22 @@ source ../build_dep.common
 
 GEOGRAPHICLIB="GeographicLib-1.51.tar.bz2"
 
+# Keep generated build headers separate from their installed destinations.
+export INSTALL_DIR=install
+
 case `uname` in
 	Linux)
 		build_dep "linux-64" "--enable-static --disable-shared" \
-		    "$GEOGRAPHICLIB" "geographiclib" "lib/libGeographic.a" && \
+		    "$GEOGRAPHICLIB" "geographiclib" "install/lib/libGeographic.a" && \
 		build_dep "win-64" "--enable-static --disable-shared \
 		    --host=x86_64-w64-mingw32" \
-		    "$GEOGRAPHICLIB" "geographiclib" "lib/libGeographic.a"
+		    "$GEOGRAPHICLIB" "geographiclib" "install/lib/libGeographic.a"
 		;;
 	Darwin)
 		CFLAGS="$CFLAGS_COMMON\\ -mmacosx-version-min=10.12" \
 		    LDFLAGS="$LDFLAGS_COMMON\\ -mmacosx-version-min=10.12" \
 		    build_dep "mac-64" "--enable-static --disable-shared" \
-		    "$GEOGRAPHICLIB" "geographiclib" "lib/libGeographic.a"
+		    "$GEOGRAPHICLIB" "geographiclib" "install/lib/libGeographic.a"
 		;;
 	*)
 		echo "Unsupported build platform" >&2

@@ -1,6 +1,7 @@
 name: Build libacfutils redist
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -274,6 +275,7 @@ jobs:
 
   publish:
     name: Publish detached redist commit
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
     needs:
       - build

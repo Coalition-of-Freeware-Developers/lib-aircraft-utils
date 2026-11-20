@@ -81,11 +81,11 @@ typedef struct htbl_multi_value_s htbl2_multi_value_t;
 
 API_EXPORT void htbl_create(htbl_t REQ_PTR(htbl), size_t tbl_sz,
     size_t key_sz, bool_t multi_value);
-void htbl_destroy(htbl_t REQ_PTR(htbl));
+API_EXPORT void htbl_destroy(htbl_t *htbl);
 
 API_EXPORT void htbl2_create(htbl2_t REQ_PTR(htbl), size_t tbl_sz,
     size_t key_sz, size_t value_sz, bool multi_value);
-void htbl2_destroy(htbl2_t REQ_PTR(htbl));
+API_EXPORT void htbl2_destroy(htbl2_t REQ_PTR(htbl));
 
 API_EXPORT void htbl_empty(htbl_t REQ_PTR(htbl),
     void (*func)(void *value, void *userinfo), void *userinfo);
@@ -99,12 +99,12 @@ API_EXPORT void htbl_set(htbl_t REQ_PTR(htbl), const void *key, void *value);
 API_EXPORT void htbl2_set(htbl2_t REQ_PTR(htbl), const void *key,
     size_t key_sz, void *value, size_t value_sz);
 
-API_EXPORT void htbl_remove(htbl_t REQ_PTR(htbl),
+API_EXPORT void htbl_remove(htbl_t *htbl,
     const void *key, bool_t nil_ok);
 API_EXPORT void htbl2_remove(htbl2_t REQ_PTR(htbl),
     const void *key, size_t key_sz, bool nil_ok);
 
-API_EXPORT void htbl_remove_multi(htbl_t REQ_PTR(htbl),
+API_EXPORT void htbl_remove_multi(htbl_t *htbl,
     const void *key, htbl_multi_value_t *list_item);
 API_EXPORT void htbl2_remove_multi(htbl2_t REQ_PTR(htbl),
     const void *key, size_t key_sz, htbl2_multi_value_t *list_item);

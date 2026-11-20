@@ -151,7 +151,7 @@ htbl2_create(htbl2_t REQ_PTR(htbl), size_t tbl_sz, size_t key_sz,
  * @see htbl_create()
  */
 void
-htbl_destroy(htbl_t REQ_PTR(htbl))
+htbl_destroy(htbl_t *htbl)
 {
 	ASSERT(htbl != NULL);
 	ASSERT(htbl->num_values == 0);
@@ -338,7 +338,7 @@ htbl2_set(htbl2_t REQ_PTR(htbl), const void *key, size_t key_sz,
  *	is triggered.
  */
 void
-htbl_remove(htbl_t REQ_PTR(htbl), const void *key, bool_t nil_ok)
+htbl_remove(htbl_t *htbl, const void *key, bool_t nil_ok)
 {
 	ASSERT(htbl != NULL);
 	ASSERT(key != NULL);
@@ -351,10 +351,11 @@ htbl_remove(htbl_t REQ_PTR(htbl), const void *key, bool_t nil_ok)
 		if (memcmp(item->key, key, htbl->key_sz) == 0) {
 			list_remove(bucket, item);
 			if (htbl->multi_value) {
-				htbl_empty_multi_item(item, NULL, NULL);
+				size_t num_values = list_count(&item->multi);
 				ASSERT3U(htbl->num_values, >=,
-				    list_count(&item->multi));
-				htbl->num_values -= list_count(&item->multi);
+				    num_values);
+				htbl->num_values -= num_values;
+				htbl_empty_multi_item(item, NULL, NULL);
 			} else {
 				free(item);
 				ASSERT(htbl->num_values != 0);
@@ -399,7 +400,7 @@ htbl2_remove(htbl2_t REQ_PTR(htbl), const void *key, size_t key_sz,
  *```
  */
 void
-htbl_remove_multi(htbl_t REQ_PTR(htbl), const void *key,
+htbl_remove_multi(htbl_t *htbl, const void *key,
     htbl_multi_value_t *list_item)
 {
 	ASSERT(htbl != NULL);

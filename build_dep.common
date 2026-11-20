@@ -131,11 +131,14 @@ function build_dep() {
 			fi
 			cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/$INSTALL_DIR" \
 			    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+			    -DCMAKE_C_STANDARD=11 -DCMAKE_C_STANDARD_REQUIRED=ON \
+			    -DCMAKE_C_EXTENSIONS=ON \
 			    "${cmake_search_options[@]}" \
 			    ${XCOMPILE_OPTIONS} \
 			    ${CONFOPTS} "../$SRCDIR" || exit 1
 		else
-			eval CFLAGS="-fvisibility=hidden\\ -O2\\ $FPIC\\ ${CFLAGS}\\ \
+			# Bundled dependencies predate C23, the default in newer GCC releases.
+			eval CFLAGS="-fvisibility=hidden\\ -O2\\ -std=gnu11\\ $FPIC\\ ${CFLAGS}\\ \
 $CFLAGS_ADDTL" \
 			CXXFLAGS="-fvisibility=hidden\\ -O2\\ $FPIC\\ ${CXXFLAGS}\\ \
 $CXXFLAGS_ADDTL" \
