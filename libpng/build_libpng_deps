@@ -38,7 +38,8 @@ case `uname` in
 		;;
 	Darwin)
 		# Both slices share a configuration, so disable host-specific optimizations.
-		CFLAGS="$CFLAGS_COMMON\\ -mmacosx-version-min=10.6\\ -I$(pwd)/../zlib/zlib-mac-64/include" \
+		CFLAGS="$CFLAGS_COMMON\\ -mmacosx-version-min=10.6" \
+		    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$(pwd)/../zlib/zlib-mac-64/include" \
 		    LDFLAGS="$LDFLAGS_COMMON\\ -mmacosx-version-min=10.6\\ -L$(pwd)/../zlib/zlib-mac-64/lib" \
 		    build_dep "mac-64" "--enable-static --disable-shared --disable-hardware-optimizations --disable-arm-neon" \
 		    "$LIBPNG" "libpng" "lib/libpng16.a" "modern-macos.patch"
