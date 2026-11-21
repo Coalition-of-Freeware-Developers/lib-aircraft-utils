@@ -1,6 +1,9 @@
 --- a/zutil.h
 +++ b/zutil.h
-@@ -140,4 +140,6 @@
+@@ -137,7 +137,9 @@
+ #  endif
+ #endif
+
 -#if defined(MACOS) || defined(TARGET_OS_MAC)
 +/* Modern macOS also defines TARGET_OS_MAC, but provides fdopen(). */
 +#if (defined(MACOS) || defined(TARGET_OS_MAC)) && \

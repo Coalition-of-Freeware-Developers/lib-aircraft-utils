@@ -24,7 +24,9 @@ NCPUS=$(( $(sysctl -n hw.ncpu) + 1 ))
 rm -rf mac32 mac64
 mkdir -p mac32 mac64
 
-make distclean > /dev/null
+if [ -f Makefile ]; then
+	make distclean > /dev/null
+fi
 qmake -set DLL 0
 qmake -set NOERRORS 1
 qmake -spec macx-clang && make -j $NCPUS && mv libacfutils.a mac64

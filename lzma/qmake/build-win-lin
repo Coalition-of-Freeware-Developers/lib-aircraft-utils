@@ -31,7 +31,9 @@ LIB="liblzma.a"
 rm -rf win-32 win-64 linux-32 linux-64
 mkdir -p win-32 win-64 linux-32 linux-64
 
-make distclean &> /dev/null
+if [ -f Makefile ]; then
+	make distclean > /dev/null 2>&1
+fi
 
 if [[ "$do_clean" = 1 ]]; then
 	exit
@@ -45,10 +47,14 @@ if [ "$minimal" -ne 1 ]; then
 	fi
 fi
 
-make distclean > /dev/null
+if [ -f Makefile ]; then
+	make distclean > /dev/null
+fi
 qmake -spec linux-g++-64 && make -j $NCPUS && mv "$LIB" linux-64
 if [ $? != 0 ] ; then
   exit 1
 fi
 
-make distclean > /dev/null
+if [ -f Makefile ]; then
+	make distclean > /dev/null
+fi
